@@ -79,7 +79,8 @@ void listar_elemento_matriz(Matriz* matriz, int linha, int coluna) {
     while(aux!=NULL){
         if(aux->elementos.linha == linha && aux->elementos.coluna == coluna){
             encontrado = 1;
-            printf("\n\nLinha: %d | Coluna: %d | Valor: %d\n",linha, coluna, aux->elementos.valor);
+            printf("\n\nElemento (%d, %d): %d\n", linha, coluna, aux->elementos.valor);
+            // printf("\n\nLinha: %d | Coluna: %d | Valor: %d\n",linha, coluna, aux->elementos.valor);
             exit(0);
         }
         
@@ -87,7 +88,7 @@ void listar_elemento_matriz(Matriz* matriz, int linha, int coluna) {
     }
 
     if(encontrado == 0){
-        printf("\n\nLinha: %d | Coluna: %d | Valor: N/A\n",linha, coluna);
+        printf("\n\nElemento (%d, %d) nao encontrado na matriz.\n", linha, coluna);
         exit;
     }
 }
@@ -95,37 +96,19 @@ void listar_elemento_matriz(Matriz* matriz, int linha, int coluna) {
 Matriz* alterar_elemento_matriz(Matriz* matriz, int linha, int coluna, int valor) {
     Matriz* aux = matriz;
 
-    int encontrado = 0;
-    while(aux!=NULL){
-        if(aux->elementos.linha == linha && aux->elementos.coluna == coluna){
-            encontrado = 1;
-
-            int valor_antigo = aux->elementos.valor;
+    int valor_antigo = 0;
+    
+    while (aux != NULL) {
+        if (aux->elementos.linha == linha && aux->elementos.coluna == coluna) {
+            valor_antigo = aux->elementos.valor;
             aux->elementos.valor = valor;
-            if(aux->elementos.valor == valor){
-                matriz = aux;
-                // Matriz* aux2 = matriz;
-
-                // while(aux2!=NULL){
-                //     if(aux2->elementos.linha == linha && aux2->elementos.coluna == coluna-1){
-                //         aux2->seguinte = matriz;
-                //         matriz = aux2;
-                //     }
-                // }
-
-                printf("\n\nElemento da linha %d, coluna %d alterado de %d para %d.\n\n",linha, coluna, valor_antigo, valor);
-            } else {
-                printf("\n\nNao foi possivel alterar o elemento da linha %d, coluna %d para o valor pretendido.\n",linha, coluna);
-            }
+            printf("\n\nElemento (%d, %d) alterado de %d para %d\n", linha, coluna, valor_antigo, aux->elementos.valor);
+            return matriz;
         }
-        
         aux = aux->seguinte;
     }
-
-    if(encontrado == 0){
-        printf("\n\nElemento da linha %d, coluna %d nao foi encontrado.\n",linha, coluna);
-    }
-
+    
+    printf("\n\nElemento (%d, %d) nao encontrado na matriz.\n", linha, coluna);
     return matriz;
 }
 
@@ -230,7 +213,8 @@ int main() {
     int count = contar(matriz);
     printf(" | Num Elementos: %d\n\n",count);
     listar_matriz(matriz);
-    matriz = alterar_elemento_matriz(matriz,5,5,1);
+    matriz = alterar_elemento_matriz(matriz,2,4,1);
+    printf("\n");
     listar_matriz(matriz);
     // printf("\n\n");
     // printf("\nTeste");
