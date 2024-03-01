@@ -74,14 +74,59 @@ void listar_matriz(Matriz* matriz) {
 
 void listar_elemento_matriz(Matriz* matriz, int linha, int coluna) {
     Matriz* aux = matriz;
+
+    int encontrado = 0;
     while(aux!=NULL){
         if(aux->elementos.linha == linha && aux->elementos.coluna == coluna){
-            printf("%d\n",aux->elementos.valor);
-            break;
+            encontrado = 1;
+            printf("\n\nLinha: %d | Coluna: %d | Valor: %d\n",linha, coluna, aux->elementos.valor);
+            exit(0);
         }
         
         aux = aux->seguinte;
     }
+
+    if(encontrado == 0){
+        printf("\n\nLinha: %d | Coluna: %d | Valor: N/A\n",linha, coluna);
+        exit;
+    }
+}
+
+Matriz* alterar_elemento_matriz(Matriz* matriz, int linha, int coluna, int valor) {
+    Matriz* aux = matriz;
+
+    int encontrado = 0;
+    while(aux!=NULL){
+        if(aux->elementos.linha == linha && aux->elementos.coluna == coluna){
+            encontrado = 1;
+
+            int valor_antigo = aux->elementos.valor;
+            aux->elementos.valor = valor;
+            if(aux->elementos.valor == valor){
+                matriz = aux;
+                // Matriz* aux2 = matriz;
+
+                // while(aux2!=NULL){
+                //     if(aux2->elementos.linha == linha && aux2->elementos.coluna == coluna-1){
+                //         aux2->seguinte = matriz;
+                //         matriz = aux2;
+                //     }
+                // }
+
+                printf("\n\nElemento da linha %d, coluna %d alterado de %d para %d.\n\n",linha, coluna, valor_antigo, valor);
+            } else {
+                printf("\n\nNao foi possivel alterar o elemento da linha %d, coluna %d para o valor pretendido.\n",linha, coluna);
+            }
+        }
+        
+        aux = aux->seguinte;
+    }
+
+    if(encontrado == 0){
+        printf("\n\nElemento da linha %d, coluna %d nao foi encontrado.\n",linha, coluna);
+    }
+
+    return matriz;
 }
 
 int contar(Matriz* matriz){
@@ -151,7 +196,7 @@ Matriz* popular_matriz_txt(Matriz* matriz) {
             }
             // printf("numElementosPorLinha: %d | colunaCounter: %d | linhaCounter: %d\n", numElementosPorLinha,colunaCounter,linhaCounter);
             if(linhaCounter >= 2 && numElementosPorLinha != colunaCounter){
-                printf("Matriz invalida: numero de elementos por linha deve manter-se constante");
+                printf("Matriz invalida: numero de elementos por linha deve manter-se constante.\n");
                 exit(0);
             }
 
@@ -185,9 +230,11 @@ int main() {
     int count = contar(matriz);
     printf(" | Num Elementos: %d\n\n",count);
     listar_matriz(matriz);
+    matriz = alterar_elemento_matriz(matriz,5,5,1);
+    listar_matriz(matriz);
     // printf("\n\n");
     // printf("\nTeste");
-    // listar_elemento_matriz(matriz,5,3);
+    // listar_elemento_matriz(matriz,4,4);
 
     return(0);
 }
