@@ -53,22 +53,18 @@ void listar_matriz(Matriz* matriz) {
     Matriz* aux = matriz;
     int flag_linha = 0;
     while(aux!=NULL){
-        // if(aux->seguinte == NULL){
-        //     printf("%d",aux->elementos.valor);
-        // } else {
-        //     printf("%d,",aux->elementos.valor);
-        // }
-        // aux = aux->seguinte;
-
         flag_linha = aux->elementos.linha;
 
         printf("%d\t", aux->elementos.valor);
+
+        // printf("\n\nLinha: %d | Coluna: %d | Valor: %d\n",aux->elementos.linha, aux->elementos.coluna, aux->elementos.valor);
 
         aux = aux->seguinte;
 
         if (aux != NULL && aux->elementos.linha != flag_linha) {
             printf("\n");
         }
+        
     }
 }
 
@@ -124,7 +120,7 @@ int contar(Matriz* matriz){
 
 Matriz* popular_matriz_txt(Matriz* matriz) {
     FILE *fptr;
-    fptr = fopen("matriz.txt", "r");
+    fptr = fopen("matriz2.txt", "r");
 
     char txtLinha[100];
 
@@ -200,6 +196,192 @@ Matriz* popular_matriz_txt(Matriz* matriz) {
     return inicio; 
 }
 
+Matriz* add_linha_coluna(Matriz* matriz) {
+    Matriz* aux = matriz;
+
+    printf("Adicionar linha (1) ou coluna (2):\n");
+    int tipo_add;
+    scanf("%d", &tipo_add);
+
+    switch (tipo_add) {
+        case 1: // Add Linha
+            int nova_linha = -1;
+            printf("Adicionar uma linha apos a linha... (insira um numero entre 1 e %d.)\n", matriz->num_linhas);
+            scanf("%d", &nova_linha);
+
+            if (nova_linha < 1 || nova_linha > matriz->num_linhas) {
+                printf("Numero de linha selecionado invalido. Por favor selecione um numero entre 1 e %d.", matriz->num_linhas);
+                exit(0);
+            }
+
+            int *nums_add_linha = (int *)malloc(matriz->num_colunas * sizeof(int));
+
+            for (int i = 0; i < matriz->num_colunas; i++) {
+                int num = 0;
+                printf("Elemento %d:\n", i+1);
+                scanf("%d", &num);
+                nums_add_linha[i] = num;
+            }
+
+            int added_linha = 0;
+
+            while (aux != NULL) {
+                if (aux->elementos.linha == nova_linha && aux->elementos.coluna == matriz->num_colunas) {
+                    for (int i = 0; i < matriz->num_colunas; i++) {
+                        Matriz* novo_elemento = (Matriz*)malloc(sizeof(Matriz));
+                        if (novo_elemento != NULL) {
+                            novo_elemento->elementos.valor = nums_add_linha[i];
+                            novo_elemento->elementos.linha = nova_linha+1;
+                            novo_elemento->elementos.coluna = i+1;
+                            novo_elemento->seguinte = aux->seguinte;
+                            aux->seguinte = novo_elemento;
+                            aux = novo_elemento;
+                        }
+                    }
+                    matriz->num_linhas++;
+                    added_linha = 1;
+                }
+
+                aux = aux->seguinte;
+                if(aux != NULL && added_linha == 1){
+                    aux->elementos.linha++;
+                }
+            }
+
+            free(nums_add_linha);
+            break;
+        case 2: // Add Coluna
+            int nova_coluna = -1;
+            printf("Adicionar uma coluna apos a coluna... (insira um numero entre 1 e %d.)\n", matriz->num_colunas);
+            scanf("%d", &nova_coluna);
+
+            if (nova_coluna < 1 || nova_coluna > matriz->num_colunas) {
+                printf("Numero de coluna selecionado invalido. Por favor selecione um numero entre 1 e %d.", matriz->num_colunas);
+                exit(0);
+            }
+
+            int *nums_add_coluna = (int *)malloc(matriz->num_linhas * sizeof(int));
+
+            for (int i = 0; i < matriz->num_linhas; i++) {
+                int num = 0;
+                printf("Elemento %d:\n", i+1);
+                scanf("%d", &num);
+                nums_add_coluna[i] = num;
+            }
+
+            while (aux != NULL) {
+                if (aux->elementos.coluna == nova_coluna) {
+                    Matriz* novo_elemento = (Matriz*)malloc(sizeof(Matriz));
+                    if (novo_elemento != NULL) {
+                        novo_elemento->elementos.valor = nums_add_coluna[aux->elementos.linha-1];
+                        novo_elemento->elementos.linha = aux->elementos.linha;
+                        novo_elemento->elementos.coluna = nova_coluna+1;
+                        novo_elemento->seguinte = aux->seguinte;
+                        aux->seguinte = novo_elemento;
+                        aux = novo_elemento;
+                    }
+                }
+
+                aux = aux->seguinte;
+            }
+            matriz->num_colunas++;
+
+            free(nums_add_coluna);
+            break;
+        default:
+            printf("Tipo de alteracao invalido. Selecione linha (1) ou coluna (2)");
+            exit(0);
+    }
+    
+    return matriz;
+}
+
+Matriz* remove_linha_coluna(Matriz* matriz) {
+    Matriz* aux = matriz;
+
+    int num_linhas = matriz->num_linhas;
+    int num_colunas = matriz->num_colunas;
+
+    printf("Remover linha (1) ou coluna (2):\n");
+    int tipo_add;
+    scanf("%d", &tipo_add);
+
+    switch (tipo_add) {
+        case 1: // Remove Linha
+            int linha = -1;
+            printf("Remover linha... (insira um numero entre 1 e %d.)\n", matriz->num_linhas);
+            scanf("%d", &linha);
+
+            if (linha < 1 || linha > matriz->num_linhas) {
+                printf("Numero de linha selecionado invalido. Por favor selecione um numero entre 1 e %d.", matriz->num_linhas);
+                exit(0);
+            }
+
+            Matriz* anterior = NULL;
+            while (aux != NULL) {
+                if (aux->elementos.linha == linha) {
+                    if (anterior == NULL) {
+                        matriz = aux->seguinte;
+                    } else {
+                        anterior->seguinte = aux->seguinte;
+                    }
+
+                    Matriz* temp = aux;
+                    aux = aux->seguinte;
+                    temp->seguinte = NULL;
+                    free(temp);
+                } else {
+                    if(aux->elementos.linha > linha){
+                        aux->elementos.linha--;
+                    }
+                    anterior = aux;
+                    aux = aux->seguinte;
+                }
+            }
+            break;
+        case 2: // Remove Coluna
+            int coluna = -1;
+            printf("Remover coluna... (insira um numero entre 1 e %d.)\n", matriz->num_colunas);
+            scanf("%d", &coluna);
+
+            if (coluna < 1 || coluna > matriz->num_colunas) {
+                printf("Numero de coluna selecionado invalido. Por favor selecione um numero entre 1 e %d.", matriz->num_linhas);
+                exit(0);
+            }
+
+            Matriz* anterior_coluna = NULL;
+            while (aux != NULL) {
+                if (aux->elementos.coluna == coluna) {
+                    if (anterior_coluna == NULL) {
+                        matriz = aux->seguinte;
+                    } else {
+                        anterior_coluna->seguinte = aux->seguinte;
+                    }
+
+                    Matriz* temp = aux;
+                    aux = aux->seguinte;
+                    temp->seguinte = NULL;
+                    free(temp);
+                } else {
+                    if(aux->elementos.coluna > coluna){
+                        aux->elementos.coluna--;
+                    }
+                    anterior_coluna = aux;
+                    aux = aux->seguinte;
+                }
+            }
+            break;
+        default:
+            printf("Tipo de alteracao invalido. Selecione linha (1) ou coluna (2)");
+            exit(0);
+    }
+    
+    matriz->num_linhas = num_linhas;
+    matriz->num_colunas = num_colunas-1;
+
+    return matriz;
+}
+
 void apagar_matriz(Matriz* matriz) {
     free(matriz);
 }
@@ -213,9 +395,16 @@ int main() {
     int count = contar(matriz);
     printf(" | Num Elementos: %d\n\n",count);
     listar_matriz(matriz);
-    matriz = alterar_elemento_matriz(matriz,2,4,1);
-    printf("\n");
+    printf("\n\n");
+    matriz = remove_linha_coluna(matriz);
+    printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+    // matriz = popular_matriz(matriz);
+    count = contar(matriz);
+    printf(" | Num Elementos: %d\n\n",count);
     listar_matriz(matriz);
+    // matriz = alterar_elemento_matriz(matriz,1,2,502);
+    // printf("\n");
+    // listar_matriz(matriz);
     // printf("\n\n");
     // printf("\nTeste");
     // listar_elemento_matriz(matriz,4,4);
