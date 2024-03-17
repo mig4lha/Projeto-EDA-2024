@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 typedef struct elementos{
     int valor;
@@ -16,12 +17,32 @@ typedef struct matrizes{
     struct matrizes* seguinte;
 } Matriz;
 
+void limpar_terminal() {
+    #ifdef _WIN32 
+        //Windows
+        system("cls");
+    #else
+        //Linux
+        system("clear"); 
+    #endif
+}
+
+void limpar_input_buffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
 Matriz* criar_matriz() {
     Matriz* matriz = (Matriz*) malloc(sizeof(Matriz));
     matriz->num_linhas = 0;
     matriz->num_colunas = 0;
     return matriz;
 }
+
+void apagar_matriz(Matriz* matriz) {
+    free(matriz);
+}
+
 
 Matriz* popular_matriz(Matriz* matriz) {
     Matriz* inicio = NULL; 
@@ -55,9 +76,9 @@ void listar_matriz(Matriz* matriz) {
     while(aux!=NULL){
         flag_linha = aux->elementos.linha;
 
-        printf("%d\t", aux->elementos.valor);
-
         // printf("\n\nLinha: %d | Coluna: %d | Valor: %d\n",aux->elementos.linha, aux->elementos.coluna, aux->elementos.valor);
+
+        printf("%d\t", aux->elementos.valor);
 
         aux = aux->seguinte;
 
@@ -89,22 +110,71 @@ void listar_elemento_matriz(Matriz* matriz, int linha, int coluna) {
     }
 }
 
-Matriz* alterar_elemento_matriz(Matriz* matriz, int linha, int coluna, int valor) {
+void guardar_matriz_txt(Matriz* matriz) {
+    FILE *f = fopen("matriz_modificada.txt", "w");
+    if (f == NULL)
+    {
+        printf("Nao foi possivel abrir ficheiro.\n");
+        exit(0);
+    }
+
+    Matriz* aux = matriz;
+    int flag_linha = 0;
+
+    while(aux!=NULL){
+        flag_linha = aux->elementos.linha;
+        // printf("\n\nLinha: %d | Coluna: %d | Valor: %d\n",aux->elementos.linha, aux->elementos.coluna, aux->elementos.valor);
+        if(flag_linha == 1 && aux->elementos.coluna == matriz->num_colunas) {
+            fprintf(f, "%d\n", aux->elementos.valor);
+        } else if(aux->elementos.coluna == matriz->num_colunas) {
+            fprintf(f, "%d\n", aux->elementos.valor);
+        } else{
+            fprintf(f, "%d;", aux->elementos.valor);
+        }
+
+        aux = aux->seguinte;        
+    }
+
+    fclose(f);
+}
+
+Matriz* alterar_elemento_matriz(Matriz* matriz) {
     Matriz* aux = matriz;
 
+    int linha = 0;
+    int coluna = 0;
+    int valor = 0;
+
+    printf("Selecione uma coordenada linha para alterar:\n");
+    scanf("%d",&linha);
+    printf("\nSelecione uma coordenada coluna para alterar:\n");
+    scanf("%d",&coluna);
+    printf("\nSelecione um novo valor para o elemento:\n");
+    scanf("%d",&valor);
+
     int valor_antigo = 0;
+    int encontrado = 0;
     
     while (aux != NULL) {
         if (aux->elementos.linha == linha && aux->elementos.coluna == coluna) {
             valor_antigo = aux->elementos.valor;
             aux->elementos.valor = valor;
-            printf("\n\nElemento (%d, %d) alterado de %d para %d\n", linha, coluna, valor_antigo, aux->elementos.valor);
-            return matriz;
+            encontrado = 1;
+            limpar_terminal();
+            printf("\nElemento (%d, %d) alterado de %d para %d\n", linha, coluna, valor_antigo, aux->elementos.valor);
+            getchar();
         }
         aux = aux->seguinte;
     }
     
-    printf("\n\nElemento (%d, %d) nao encontrado na matriz.\n", linha, coluna);
+    if(encontrado == 0){
+        limpar_terminal();
+        printf("\nElemento (%d, %d) nao encontrado na matriz.\n", linha, coluna);
+        getchar();
+    }
+
+    // guardar_matriz_txt(matriz);
+
     return matriz;
 }
 
@@ -182,7 +252,9 @@ Matriz* popular_matriz_txt(Matriz* matriz) {
             // printf("numElementosPorLinha: %d | linhaCounter: %d\n", numElementosPorLinha,linhaCounter);
         }
     } else {
-        printf("Nao foi possivel abrir ficheiro.");
+        printf("Nao foi possivel abrir ficheiro. Por favor crie um ficheiro 'matriz.txt' no diretorio do projeto para comecar.\nPrima ENTER para terminar o processo.");
+        getchar();
+        exit(0);
     }
 
     // Close the file
@@ -199,6 +271,9 @@ Matriz* popular_matriz_txt(Matriz* matriz) {
 Matriz* add_linha_coluna(Matriz* matriz) {
     Matriz* aux = matriz;
 
+    int num_linhas = matriz->num_linhas;
+    int num_colunas = matriz->num_colunas;
+
     printf("Adicionar linha (1) ou coluna (2):\n");
     int tipo_add;
     scanf("%d", &tipo_add);
@@ -206,11 +281,11 @@ Matriz* add_linha_coluna(Matriz* matriz) {
     switch (tipo_add) {
         case 1: // Add Linha
             int nova_linha = -1;
-            printf("Adicionar uma linha apos a linha... (insira um numero entre 1 e %d.)\n", matriz->num_linhas);
+            printf("Adicionar uma linha apos a linha... (insira um numero entre 0 e %d.)\n", matriz->num_linhas);
             scanf("%d", &nova_linha);
 
-            if (nova_linha < 1 || nova_linha > matriz->num_linhas) {
-                printf("Numero de linha selecionado invalido. Por favor selecione um numero entre 1 e %d.", matriz->num_linhas);
+            if (nova_linha < 0 || nova_linha > matriz->num_linhas) {
+                printf("Numero de linha selecionado invalido. Por favor selecione um numero entre 0 e %d.", matriz->num_linhas);
                 exit(0);
             }
 
@@ -223,31 +298,65 @@ Matriz* add_linha_coluna(Matriz* matriz) {
                 nums_add_linha[i] = num;
             }
 
+            limpar_input_buffer();
+
             int added_linha = 0;
 
-            while (aux != NULL) {
-                if (aux->elementos.linha == nova_linha && aux->elementos.coluna == matriz->num_colunas) {
-                    for (int i = 0; i < matriz->num_colunas; i++) {
-                        Matriz* novo_elemento = (Matriz*)malloc(sizeof(Matriz));
-                        if (novo_elemento != NULL) {
-                            novo_elemento->elementos.valor = nums_add_linha[i];
-                            novo_elemento->elementos.linha = nova_linha+1;
-                            novo_elemento->elementos.coluna = i+1;
-                            novo_elemento->seguinte = aux->seguinte;
-                            aux->seguinte = novo_elemento;
-                            aux = novo_elemento;
-                        }
+            if (nova_linha == 0) {
+                for (int i = matriz->num_colunas; i > 0 ; i--) {
+                    Matriz* novo_elemento = (Matriz*)malloc(sizeof(Matriz));
+                    if (novo_elemento != NULL) {
+                        novo_elemento->elementos.valor = nums_add_linha[i-1];
+                        novo_elemento->elementos.linha = 1;
+                        novo_elemento->elementos.coluna = i;
+                        novo_elemento->seguinte = aux;
+                        aux = novo_elemento;
                     }
-                    matriz->num_linhas++;
-                    added_linha = 1;
                 }
 
-                aux = aux->seguinte;
-                if(aux != NULL && added_linha == 1){
-                    aux->elementos.linha++;
+                Matriz* linhas_seguintes = aux;
+                
+                int skip_counter = 0;
+                while (linhas_seguintes != NULL) {
+                    if(skip_counter <= num_colunas){
+                        skip_counter++;
+                    }
+                    if(skip_counter > num_colunas){
+                        linhas_seguintes->elementos.linha++;
+                    }
+                    linhas_seguintes = linhas_seguintes->seguinte;
+                }
+
+                matriz = aux;
+
+                matriz->num_linhas = num_linhas+1;
+                matriz->num_colunas = num_colunas;
+
+            } else {
+                while (aux != NULL) {
+                    if (aux->elementos.linha == nova_linha && aux->elementos.coluna == matriz->num_colunas) {
+                        for (int i = 0; i < matriz->num_colunas; i++) {
+                            Matriz* novo_elemento = (Matriz*)malloc(sizeof(Matriz));
+                            if (novo_elemento != NULL) {
+                                novo_elemento->elementos.valor = nums_add_linha[i];
+                                novo_elemento->elementos.linha = nova_linha+1;
+                                novo_elemento->elementos.coluna = i+1;
+                                novo_elemento->seguinte = aux->seguinte;
+                                aux->seguinte = novo_elemento;
+                                aux = novo_elemento;
+                            }
+                        }
+                        matriz->num_linhas++;
+                        added_linha = 1;
+                    }
+
+                    aux = aux->seguinte;
+                    if(aux != NULL && added_linha == 1){
+                        aux->elementos.linha++;
+                    }
                 }
             }
-
+            
             free(nums_add_linha);
             break;
         case 2: // Add Coluna
@@ -292,6 +401,8 @@ Matriz* add_linha_coluna(Matriz* matriz) {
             printf("Tipo de alteracao invalido. Selecione linha (1) ou coluna (2)");
             exit(0);
     }
+
+    // guardar_matriz_txt(matriz);
     
     return matriz;
 }
@@ -338,6 +449,10 @@ Matriz* remove_linha_coluna(Matriz* matriz) {
                     aux = aux->seguinte;
                 }
             }
+
+            matriz->num_linhas = num_linhas-1;
+            matriz->num_colunas = num_colunas;
+
             break;
         case 2: // Remove Coluna
             int coluna = -1;
@@ -370,44 +485,254 @@ Matriz* remove_linha_coluna(Matriz* matriz) {
                     aux = aux->seguinte;
                 }
             }
+
+            matriz->num_linhas = num_linhas;
+            matriz->num_colunas = num_colunas-1;
+
             break;
         default:
             printf("Tipo de alteracao invalido. Selecione linha (1) ou coluna (2)");
             exit(0);
     }
-    
-    matriz->num_linhas = num_linhas;
-    matriz->num_colunas = num_colunas-1;
+
+    // guardar_matriz_txt(matriz);
 
     return matriz;
 }
 
-void apagar_matriz(Matriz* matriz) {
-    free(matriz);
+int encontrar_menor_valor_linha_matriz(int *elementos_linha, int counter_linha, int num_colunas) {
+    int menor_elemento = elementos_linha[1];
+    int coluna = 1;
+    int i = 1;
+
+    while(i<=num_colunas){
+        if(menor_elemento > elementos_linha[i]){
+            menor_elemento = elementos_linha[i];
+            coluna = i;
+        }
+        i++;
+    }
+
+    printf("Menor elemento: %d | Linha: %d | Coluna: %d\n", menor_elemento,counter_linha,coluna);
+
+    return coluna;
+}
+
+int valor_elemento_matriz(Matriz* matriz, int linha, int coluna){
+    Matriz* aux = matriz;
+    while (aux != NULL) {
+        if (aux->elementos.linha == linha && aux->elementos.coluna == coluna) {
+            return aux->elementos.valor;
+        }
+        aux = aux->seguinte;
+    }
+}
+
+int calcular_soma_maxima_possivel(Matriz* matriz) {
+    Matriz* matriz_calculo = criar_matriz();
+    matriz_calculo = popular_matriz_txt(matriz);
+
+    Matriz* aux = matriz_calculo;
+    Matriz* aux2 = matriz_calculo;
+
+    int somatorio = 0;
+    int *menor_elementos_linhas = (int *)malloc(matriz->num_linhas * sizeof(int));
+    int counter_linha = 1;
+
+    while (aux != NULL)
+    {
+        int *elementos_linha = (int *)malloc(matriz->num_colunas * sizeof(int));
+
+        for (int i = 1; i <= matriz->num_colunas; i++) {
+            elementos_linha[i] = aux->elementos.valor;
+            aux = aux->seguinte;
+        }
+
+        for (int i = 1; i <= matriz->num_colunas; i++) {
+            printf("Elemento %d: %d\n", i, elementos_linha[i]);
+        }
+
+        // O menor elemento da linha está a ser guardado no index counter_linha 
+        // e está posicionado na coluna retornada pela função
+        // menor_elementos_linhas[linha] = coluna
+        menor_elementos_linhas[counter_linha] = encontrar_menor_valor_linha_matriz(elementos_linha, counter_linha, matriz->num_colunas);
+        counter_linha++;
+    }
+
+    printf("\nMenores elementos:\n");
+    for (int h = 1; h <= matriz->num_linhas; h++)
+    {
+        printf("Linha: %d | Coluna: %d\n", h,menor_elementos_linhas[h]);
+    }
+    printf("\n");
+
+    int menor_elemento_da_linha = 0;
+    int linha_anterior = 1;
+    while (aux2 != NULL)
+    {
+        printf("Linha: %d | Linha anterior: %d | Coluna: %d | Elemento: %d\n",aux2->elementos.linha,linha_anterior,aux2->elementos.coluna,aux2->elementos.valor);
+        if(menor_elemento_da_linha == 0 || linha_anterior != aux2->elementos.linha){
+            menor_elemento_da_linha = valor_elemento_matriz(aux2,aux2->elementos.linha,menor_elementos_linhas[aux2->elementos.linha]);
+            // printf("\n%d\n", valor_elemento_matriz(aux2,aux2->elementos.linha,menor_elementos_linhas[aux2->elementos.linha]));
+        }
+        if(menor_elementos_linhas[aux2->elementos.linha] != aux2->elementos.coluna){
+            aux2->elementos.valor = aux2->elementos.valor - menor_elemento_da_linha;
+        } else {
+            aux2->elementos.valor = 0;
+        }
+        if(aux2 != NULL && aux2->elementos.linha != linha_anterior){
+            linha_anterior = aux2->elementos.linha;
+        }
+        aux2 = aux2->seguinte;
+    }
+
+    printf("\n");
+    listar_matriz(matriz_calculo);
+    printf("\n");
+    
+    // apagar_matriz(matriz_calculo);
+
+    return(somatorio);
+}
+
+void menu(Matriz* matriz) {
+    limpar_terminal();
+    printf("Selecione uma opcao:\n\n");
+    printf("1. Listar matriz\n");
+    printf("2. Alterar elemento da matriz\n");
+    printf("3. Adicionar linha/coluna da matriz\n");
+    printf("4. Remover linha/coluna da matriz\n");
+    printf("5. Calcular somatorio maximo possível\n");
+    printf("6. Sair\n\n");
+
+    int escolha = 0;
+    int count = 0;
+
+    printf("Escolha: ");
+    scanf("%d", &escolha);
+    limpar_input_buffer();
+
+    limpar_terminal();
+
+    switch (escolha)
+    {
+    case 1:        
+        printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+        count = contar(matriz);
+        printf(" | Num Elementos: %d\n\n",count);
+        listar_matriz(matriz);
+        printf("\n\nPressione ENTER para continuar.");
+        getchar();
+        menu(matriz);
+        break;
+    case 2:
+        printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+        count = contar(matriz);
+        printf(" | Num Elementos: %d\n\n",count);
+        listar_matriz(matriz);
+        printf("\n\n");
+        matriz = alterar_elemento_matriz(matriz);
+        printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+        count = contar(matriz);
+        printf(" | Num Elementos: %d\n\n",count);
+        listar_matriz(matriz);
+        printf("\n\nPressione ENTER para continuar.");
+        getchar();
+        menu(matriz);
+        break;
+    case 3:
+        printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+        count = contar(matriz);
+        printf(" | Num Elementos: %d\n\n",count);
+        listar_matriz(matriz);
+        printf("\n\n");
+        matriz = add_linha_coluna(matriz);
+        printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+        count = contar(matriz);
+        printf(" | Num Elementos: %d\n\n",count);
+        listar_matriz(matriz);
+        printf("\n\nPressione ENTER para continuar.");
+        getchar();
+        menu(matriz);
+        break;
+    case 4:
+        printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+        count = contar(matriz);
+        printf(" | Num Elementos: %d\n\n",count);
+        listar_matriz(matriz);
+        printf("\n\n");
+        matriz = remove_linha_coluna(matriz);
+        printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+        count = contar(matriz);
+        printf(" | Num Elementos: %d\n\n",count);
+        listar_matriz(matriz);
+        printf("\n\nPressione ENTER para continuar.");
+        getchar();
+        menu(matriz);
+    case 5:
+        printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
+        count = contar(matriz);
+        printf(" | Num Elementos: %d\n\n",count);
+        listar_matriz(matriz);
+        printf("\n\n");
+        int somatorio = calcular_soma_maxima_possivel(matriz);
+        printf("\nSoma maxima possivel dos inteiros: %d",somatorio);
+        printf("\n\nPressione ENTER para continuar.");
+        getchar();
+        menu(matriz);
+        break;
+    case 6:
+        exit(0);
+        break;
+    default:
+        printf("Escolha invalida. Pressione ENTER para recomecar.");
+        getchar();
+        menu(matriz);
+        break;
+    }
+
+}
+
+void info () {
+    limpar_terminal();
+    printf("Projeto de Avaliação - Estrutura de Dados Avançadas\n");
+    printf("Fase 1: Linked Lists\n\n");
+
+    printf("Importante: O programa ira ler um ficheiro de texto de nome 'matriz.txt' presente no diretorio do projeto!\n\n\n");
+    
+    printf("1. Continuar\n");
+    printf("2. Sair\n\n");
+
+    int escolha = 0;
+
+    printf("Escolha: ");
+    scanf("%d", &escolha);
+    limpar_input_buffer();
+
+    limpar_terminal();
+
+    switch (escolha)
+    {
+    case 1:
+        Matriz* matriz = criar_matriz();
+        matriz = popular_matriz_txt(matriz);
+        menu(matriz);
+        break;
+    case 2:
+        exit(0);
+        break;
+    default:
+        printf("Escolha invalida. Pressione ENTER para recomecar.");
+        getchar();
+        info();
+        break;
+    }
 }
 
 int main() {
     srand(time(NULL));
-    Matriz* matriz = criar_matriz();
-    matriz = popular_matriz_txt(matriz);
-    printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
-    // matriz = popular_matriz(matriz);
-    int count = contar(matriz);
-    printf(" | Num Elementos: %d\n\n",count);
-    listar_matriz(matriz);
-    printf("\n\n");
-    matriz = remove_linha_coluna(matriz);
-    printf("\nNum Linhas: %d | Num Colunas: %d",matriz->num_linhas,matriz->num_colunas);
-    // matriz = popular_matriz(matriz);
-    count = contar(matriz);
-    printf(" | Num Elementos: %d\n\n",count);
-    listar_matriz(matriz);
-    // matriz = alterar_elemento_matriz(matriz,1,2,502);
-    // printf("\n");
-    // listar_matriz(matriz);
-    // printf("\n\n");
-    // printf("\nTeste");
-    // listar_elemento_matriz(matriz,4,4);
+
+    info();
 
     return(0);
 }
